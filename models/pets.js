@@ -9,7 +9,7 @@ module.exports = class Pet {
     ownerId;
 
     constructor(row) {
-        this.id = row.id;
+        this.id = String(row.id);
         this.type = row.type;
         this.name = row.name;
         this.ownerId = String(row.owner_id);

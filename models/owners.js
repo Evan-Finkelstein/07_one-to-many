@@ -1,6 +1,6 @@
 
-const pool = require('../lib/utils/pool.js')
-
+const pool = require('../lib/utils/pool.js');
+const Pet = require('./pets');
 
 module.exports = class Owner {
     id;
@@ -9,7 +9,7 @@ module.exports = class Owner {
     description;
 
     constructor(row) {
-        this.id = row.id;
+        this.id = String(row.id);
         this.name = row.name;
         this.job = row.job;
         this.description = row.description;
@@ -29,9 +29,27 @@ module.exports = class Owner {
     }
 
     static async findById(id) {
-        const { rows } = await pool.query('SELECT * FROM owners WHERE id=$1', [id]);
-        if (!rows[0]) throw new Error(`No Owner with id ${id}`);
-        return new Owner(rows[0]);
+        const { rows } = await pool.query(
+            `
+          SELECT
+            owners.*,
+            array_to_json(array_agg(pets.*)) AS pets
+          FROM
+            owners
+          JOIN pets
+          ON owners.id = pets.owner_id
+          WHERE owners.id=$1
+          GROUP BY owners.id
+          `,
+            [id]
+        );
+
+        if (!rows[0]) throw new Error(`No car with id ${id} found`);
+
+        return {
+            ...new Owner(rows[0]),
+            pets: rows[0].pets.map(ride => new Pet(ride))
+        }
     }
 
     static async update(id, { name, job, description }) {

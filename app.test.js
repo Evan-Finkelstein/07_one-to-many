@@ -30,17 +30,27 @@ describe('app tests', () => {
         })
     })
 
-    it('finds an owner by id', async () => {
+    it('finds an owner by id and associated pets via GET', async () => {
         const owner = await Owner.insert({
             name: 'Bill',
             job: 'plumber',
             description: 'depressed'
         });
-        const response = await request(app)
-            .get(`/owners/${owner.id}`);
-        expect(response.body).toEqual(owner);
 
-    })
+        const pets = await Promise.all([
+            { type: 'hippo', name: 'hiposterous', ownerId: owner.id },
+            { type: 'cheese', name: 'fred', ownerId: owner.id },
+            { type: 'mirror', name: 'bill', ownerId: owner.id }
+        ].map(pet => Pet.insert(pet)));
+
+        const res = await request(app)
+            .get(`/owners/${owner.id}`);
+
+        expect(res.body).toEqual({
+            ...owner,
+            pets: expect.arrayContaining(pets)
+        });
+    });
     it('finds all owners', async () => {
         const owner = await Owner.insert({
             name: 'Bill',
